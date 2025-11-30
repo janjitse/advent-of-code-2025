@@ -1,0 +1,11 @@
+[package]
+name = "advent-of-code-2025"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aoc-runner = "*"
+aoc-runner-derive = "*"
+
+[profile.release]
+lto = "fat"
