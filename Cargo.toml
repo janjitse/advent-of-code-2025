@@ -9,3 +9,6 @@ aoc-runner-derive = "*"
 
 [profile.release]
 lto = "fat"
+target-cpu="native"
+# overflow-checks = true
+# debug-assertions = true

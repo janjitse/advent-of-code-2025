@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::collections::HashSet;
 
 pub fn parse(contents: &str) -> Vec<(u64, u64)> {
@@ -13,7 +14,8 @@ fn num_digits(n: u64, b: u32) -> usize {
     (0..).take_while(|i| (b as u64).pow(*i) <= n).count()
 }
 
-#[aoc(day2, part1)]
+// #[aoc(day2, part1)]
+#[allow(dead_code)]
 pub fn part_a(contents: &str) -> u64 {
     let vec = parse(contents);
     let mut invalid_id_sum = 0;
@@ -35,7 +37,8 @@ pub fn part_a(contents: &str) -> u64 {
     invalid_id_sum
 }
 
-#[aoc(day2, part1, binary_search)]
+// #[aoc(day2, part1, binary_search)]
+#[allow(dead_code)]
 pub fn part_a_binary(contents: &str) -> u64 {
     let vec = parse(contents);
     let mut invalid_id_sum = 0;
@@ -65,7 +68,51 @@ pub fn part_a_binary(contents: &str) -> u64 {
     invalid_id_sum
 }
 
-#[aoc(day2, part2)]
+#[aoc(day2, part1, smarter)]
+// #[allow(dead_code)]
+pub fn part_a_smarter(contents: &str) -> u128 {
+    let vec = parse(contents);
+    let mut invalid_id_sum = 0;
+    for (id_start, id_end) in vec {
+        let digits_start = (num_digits(id_start, 10) as f64 / 2.0).ceil() as usize;
+        let digits_end = max(num_digits(id_end, 10) / 2, 1);
+        let mut invalid_check_start = if num_digits(id_start, 10).is_multiple_of(2) {
+            id_start / 10u64.pow(digits_start as u32)
+        } else {
+            10u64.pow(digits_start as u32 - 1)
+        };
+        for digits in digits_start..=digits_end {
+            let factor = 10u64.pow(digits as u32) + 1;
+
+            if num_digits(invalid_check_start, 10) < digits {
+                invalid_check_start = 10u64.pow(digits as u32 - 1);
+            }
+
+            while invalid_check_start * factor < id_start {
+                invalid_check_start += 1;
+            }
+
+            let mut end_invalid_ids = 10u64.pow(digits as u32) - 1;
+            if end_invalid_ids * factor > id_end {
+                end_invalid_ids = id_end / 10u64.pow(digits as u32);
+                while end_invalid_ids * factor > id_end {
+                    end_invalid_ids -= 1;
+                }
+            }
+            if end_invalid_ids < invalid_check_start {
+                continue;
+            }
+            let n = end_invalid_ids - invalid_check_start;
+            invalid_id_sum += factor as u128
+                * ((n + 1) as u128 * invalid_check_start as u128
+                    + ((n as u128 * (n as u128 + 1)) / 2));
+        }
+    }
+    invalid_id_sum
+}
+
+// #[aoc(day2, part2)]
+#[allow(dead_code)]
 pub fn part_b(contents: &str) -> u64 {
     let vec = parse(contents);
     let mut invalid_id_sum = 0;
@@ -78,7 +125,10 @@ pub fn part_b(contents: &str) -> u64 {
         for i in 1..=max_pos_invalid {
             let invalid_string: Vec<String> = vec![i; rep].iter().map(|x| x.to_string()).collect();
             let invalid_id: u64 = invalid_string.join("").parse().unwrap();
-            all_invalid.insert(invalid_id);
+            let not_seen = all_invalid.insert(invalid_id);
+            if !not_seen {
+                println!("{}, {}, {}", i, rep, invalid_id);
+            }
         }
     }
 
@@ -93,7 +143,7 @@ pub fn part_b(contents: &str) -> u64 {
 }
 
 #[aoc(day2, part2, binary_search)]
-pub fn part_b_binary(contents: &str) -> u64 {
+pub fn part_b_binary(contents: &str) -> u128 {
     let vec = parse(contents);
     let mut invalid_id_sum = 0;
     let max_id = vec.iter().max_by_key(|x| x.1).unwrap().1;
@@ -120,7 +170,8 @@ pub fn part_b_binary(contents: &str) -> u64 {
             .iter()
             .take(end_idx)
             .skip(start_idx)
-            .sum::<u64>();
+            .map(|&x| x as u128)
+            .sum::<u128>();
     }
     invalid_id_sum
 }
@@ -144,6 +195,14 @@ mod tests {
         let file_path = format!("input/2025/{}_small.txt", s);
         let contents = fs::read_to_string(file_path).expect("file not found");
         assert_eq!(part_a_binary(&contents), 1227775554);
+    }
+
+    #[test]
+    fn test_1_smarter() {
+        let s = Path::new(file!()).file_stem().unwrap().to_str().unwrap();
+        let file_path = format!("input/2025/{}_small.txt", s);
+        let contents = fs::read_to_string(file_path).expect("file not found");
+        assert_eq!(part_a_smarter(&contents), 1227775554);
     }
 
     #[test]
