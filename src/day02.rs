@@ -125,10 +125,7 @@ pub fn part_b(contents: &str) -> u64 {
         for i in 1..=max_pos_invalid {
             let invalid_string: Vec<String> = vec![i; rep].iter().map(|x| x.to_string()).collect();
             let invalid_id: u64 = invalid_string.join("").parse().unwrap();
-            let not_seen = all_invalid.insert(invalid_id);
-            if !not_seen {
-                println!("{}, {}, {}", i, rep, invalid_id);
-            }
+            all_invalid.insert(invalid_id);
         }
     }
 
