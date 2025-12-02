@@ -9,6 +9,10 @@ pub fn parse(contents: &str) -> Vec<(u64, u64)> {
     vec
 }
 
+fn num_digits(n: u64, b: u32) -> usize {
+    (0..).take_while(|i| (b as u64).pow(*i) <= n).count()
+}
+
 #[aoc(day2, part1)]
 pub fn part_a(contents: &str) -> u64 {
     let vec = parse(contents);
@@ -37,18 +41,26 @@ pub fn part_a_binary(contents: &str) -> u64 {
     let mut invalid_id_sum = 0;
     let max_id = vec.iter().max_by_key(|x| x.1).unwrap().1;
     let mut all_invalid_vec = vec![];
-    let num_digits = max_id.to_string().chars().count() / 2;
-    let max_pos_invalid: u64 = String::from_iter(vec!['9'; num_digits]).parse().unwrap();
+    let max_num_digits = num_digits(max_id, 10) / 2;
+    let max_pos_invalid: u64 = String::from_iter(vec!['9'; max_num_digits])
+        .parse()
+        .unwrap();
     for i in 1..=max_pos_invalid {
-        let invalid_id: u64 = (i.to_string() + &i.to_string()).parse().unwrap();
+        let invalid_id = i + i * 10u64.pow(num_digits(i, 10) as u32);
+        if invalid_id > max_id {
+            break;
+        }
         all_invalid_vec.push(invalid_id);
     }
     all_invalid_vec.sort_unstable();
-    all_invalid_vec.dedup();
     for (id_start, id_end) in vec {
         let start_idx = all_invalid_vec.partition_point(|&x| x < id_start);
         let end_idx = all_invalid_vec.partition_point(|&x| x <= id_end);
-        invalid_id_sum += all_invalid_vec.iter().take(end_idx).skip(start_idx).sum::<u64>();
+        invalid_id_sum += all_invalid_vec
+            .iter()
+            .take(end_idx)
+            .skip(start_idx)
+            .sum::<u64>();
     }
     invalid_id_sum
 }
@@ -86,14 +98,17 @@ pub fn part_b_binary(contents: &str) -> u64 {
     let mut invalid_id_sum = 0;
     let max_id = vec.iter().max_by_key(|x| x.1).unwrap().1;
     let mut all_invalid_vec = vec![];
-    let max_num_digits = max_id.to_string().chars().count();
+    let max_num_digits = num_digits(max_id, 10);
     for rep in 2..=max_num_digits {
-        let num_digits = max_id.to_string().chars().count() / rep;
-        let max_pos_invalid: u64 = String::from_iter(vec!['9'; num_digits]).parse().unwrap();
-        for i in 1..=max_pos_invalid {
-            let invalid_string: Vec<String> = vec![i; rep].iter().map(|x| x.to_string()).collect();
-            let invalid_id: u64 = invalid_string.join("").parse().unwrap();
+        let mut i = 1;
+        loop {
+            let digits_i = num_digits(i, 10) as u32;
+            let invalid_id = (0..rep).fold(0, |acc, r| acc + i * 10u64.pow(digits_i * r as u32));
+            if invalid_id > max_id {
+                break;
+            }
             all_invalid_vec.push(invalid_id);
+            i += 1
         }
     }
     all_invalid_vec.sort_unstable();
@@ -101,7 +116,11 @@ pub fn part_b_binary(contents: &str) -> u64 {
     for (id_start, id_end) in vec {
         let start_idx = all_invalid_vec.partition_point(|&x| x < id_start);
         let end_idx = all_invalid_vec.partition_point(|&x| x <= id_end);
-        invalid_id_sum += all_invalid_vec.iter().take(end_idx).skip(start_idx).sum::<u64>();
+        invalid_id_sum += all_invalid_vec
+            .iter()
+            .take(end_idx)
+            .skip(start_idx)
+            .sum::<u64>();
     }
     invalid_id_sum
 }
