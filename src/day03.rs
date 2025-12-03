@@ -25,24 +25,13 @@ pub fn part_a(contents: &str) -> u32 {
 }
 
 pub fn bank_select(bank: &[u32], remaining: usize) -> (u32, usize) {
-    let bank_len = bank.len();
-    let mut max_value = bank.iter().max().unwrap();
-    let mut arg_max: Vec<usize> = bank
-        .iter()
-        .enumerate()
-        .filter(|(_, val)| *val == max_value)
-        .map(|x| x.0)
-        .collect();
-    while arg_max[0] >= bank_len - remaining {
-        max_value = bank.iter().filter(|val| *val < max_value).max().unwrap();
-        arg_max = bank
-            .iter()
-            .enumerate()
-            .filter(|(_, val)| *val == max_value)
-            .map(|x| x.0)
-            .collect();
-    }
-    (*max_value, arg_max[0])
+    let (arg_max, max_value) = bank.iter().enumerate().take(bank.len() - remaining).fold(
+        (0_usize, 0u32),
+        |prev, (idx, val)| {
+            if *val > prev.1 { (idx, *val) } else { prev }
+        },
+    );
+    (max_value, arg_max)
 }
 
 #[aoc(day3, part2)]
