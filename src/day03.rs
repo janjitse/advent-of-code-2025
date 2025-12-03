@@ -12,25 +12,13 @@ pub fn part_a(contents: &str) -> u32 {
     let vec = parse(contents);
     let mut total_joltage = 0;
     for bank in vec {
-        let bank_len = bank.len();
-        let mut max_value = bank.iter().max().unwrap();
-        let mut arg_max: Vec<usize> = bank
-            .iter()
-            .enumerate()
-            .filter(|(_, val)| *val == max_value)
-            .map(|x| x.0)
-            .collect();
-        if arg_max[0] == bank_len - 1 {
-            max_value = bank.iter().filter(|val| *val < max_value).max().unwrap();
-            arg_max = bank
-                .iter()
-                .enumerate()
-                .filter(|(_, val)| *val == max_value)
-                .map(|x| x.0)
-                .collect();
+        let mut bank_value = 0;
+        let mut next_bank = bank.clone();
+        for rem in (0..2_usize).rev() {
+            let (val, idx) = bank_select(&next_bank, rem);
+            bank_value = 10 * bank_value + val;
+            next_bank = next_bank.into_iter().skip(idx + 1).collect();
         }
-        let second_max_value = *bank.iter().skip(arg_max[0] + 1).max().unwrap();
-        let bank_value = 10 * max_value + second_max_value;
         total_joltage += bank_value;
     }
     total_joltage
