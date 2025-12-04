@@ -30,7 +30,9 @@ pub fn parse_array_of_chars(input: &str) -> Vec<Vec<char>> {
 }
 
 #[allow(dead_code)]
-pub fn parse_bar_separated_followed_by_commaseparated(input: &str) -> (Vec<Vec<i32>>, Vec<Vec<i32>>) {
+pub fn parse_bar_separated_followed_by_commaseparated(
+    input: &str,
+) -> (Vec<Vec<i32>>, Vec<Vec<i32>>) {
     let mut lines = input.lines();
     let output1 = lines
         .by_ref()
