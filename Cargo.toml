@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 aoc-runner = "*"
 aoc-runner-derive = "*"
+regex = "1.12.2"
 
 [profile.release]
 lto = "fat"
