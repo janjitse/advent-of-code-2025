@@ -199,15 +199,14 @@ pub fn parse_chunks_of_arrays_of_chars(input: &str, chunk_size: usize) -> Vec<Ve
 }
 
 #[allow(dead_code)]
-pub fn parse_ranges_followed_by_lists(input: &str) -> (Vec<Vec<u64>>, Vec<u64>) {
+pub fn parse_ranges_followed_by_lists(input: &str) -> (Vec<(u64, u64)>, Vec<u64>) {
     let mut lines = input.lines();
     let output1 = lines
         .by_ref()
         .take_while(|line| !line.is_empty())
         .map(|line| {
-            line.split('-')
-                .map(|x| x.parse().unwrap())
-                .collect::<Vec<u64>>()
+            let s = line.split('-').collect::<Vec<&str>>();
+            (s[0].parse().unwrap(), s[1].parse().unwrap())
         })
         .collect();
     let output2 = lines
