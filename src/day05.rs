@@ -10,9 +10,9 @@ pub fn part_a(contents: &str) -> u64 {
     for range in ranges.into_iter().skip(1) {
         if range.0 > range_merged.last().unwrap().1 + 1 {
             range_merged.push((range.0, range.1));
-        } else if range.1 > range_merged.last().unwrap().1 {
+        } else {
             let to_modify = range_merged.last_mut().unwrap();
-            to_modify.1 = range.1;
+            to_modify.1 = to_modify.1.max(range.1);
         }
     }
     for id in ids {
