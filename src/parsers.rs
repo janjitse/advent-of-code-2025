@@ -167,3 +167,53 @@ pub fn parse_array_of_chars_followed_by_vec_of_chars(input: &str) -> (Vec<Vec<ch
     println!("Parsing: {:?}", time_start.elapsed().unwrap());
     (map, movement)
 }
+
+#[allow(dead_code)]
+pub fn parse_strings_separated_by_char(input: &str, sep: char) -> Vec<Vec<String>> {
+    let time_start = SystemTime::now();
+    let mut lines = input.lines();
+    let output1 = lines
+        .by_ref()
+        .take_while(|line| !line.is_empty())
+        .map(|line| line.split(sep).map(|x| x.to_string()).collect())
+        .collect();
+    println!("Parsing: {:?}", time_start.elapsed().unwrap());
+    output1
+}
+
+#[allow(dead_code)]
+pub fn parse_chunks_of_arrays_of_chars(input: &str, chunk_size: usize) -> Vec<Vec<Vec<char>>> {
+    let time_start = SystemTime::now();
+    let lines = input.lines().collect::<Vec<_>>();
+    let mut output = vec![];
+    for l in lines.chunks(chunk_size) {
+        let output1 = l
+            .iter()
+            .filter(|x| !x.is_empty())
+            .map(|x| x.chars().collect::<Vec<char>>())
+            .collect();
+        output.push(output1);
+    }
+    println!("Parsing: {:?}", time_start.elapsed().unwrap());
+    output
+}
+
+#[allow(dead_code)]
+pub fn parse_ranges_followed_by_lists(input: &str) -> (Vec<Vec<u64>>, Vec<u64>) {
+    let mut lines = input.lines();
+    let output1 = lines
+        .by_ref()
+        .take_while(|line| !line.is_empty())
+        .map(|line| {
+            line.split('-')
+                .map(|x| x.parse().unwrap())
+                .collect::<Vec<u64>>()
+        })
+        .collect();
+    let output2 = lines
+        .by_ref()
+        .take_while(|line| !line.is_empty())
+        .map(|x| x.parse().unwrap())
+        .collect();
+    (output1, output2)
+}
