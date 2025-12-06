@@ -2,7 +2,7 @@ use crate::parsers::*;
 
 #[aoc(day5, part1)]
 pub fn part_a(contents: &str) -> u64 {
-    let (mut ranges, ids) = parse_ranges_followed_by_lists(contents);
+    let (mut ranges, ids) = parse_ranges_followed_by_lists(contents, "-");
     let mut total_fresh = 0;
     ranges.sort_unstable_by_key(|x| x.0);
     let mut range_merged = Vec::with_capacity(ranges.len());
@@ -33,7 +33,7 @@ pub fn part_a(contents: &str) -> u64 {
 
 #[aoc(day5, part2)]
 pub fn part_b(contents: &str) -> u64 {
-    let (mut ranges, _) = parse_ranges_followed_by_lists(contents);
+    let (mut ranges, _) = parse_ranges_followed_by_lists(contents, "-");
     ranges.sort_unstable_by_key(|x| x.0);
     let mut last_end = ranges[0].1;
     let mut total_fresh = ranges[0].1 - ranges[0].0 + 1;
