@@ -30,7 +30,7 @@ impl Op {
     where
         I: Iterator<Item = u64>,
     {
-        numbers.fold(self.initial(), |inter, x| Op::op(self, inter, x))
+        numbers.fold(self.initial(), |inter, x| self.op(inter, x))
     }
 }
 
@@ -74,15 +74,10 @@ pub fn part_b(contents: &str) -> u64 {
         new_vec.push(new_line);
     }
     let mut total = 0;
-    let mut transposed = new_vec.into_iter().peekable();
+    let mut transposed = new_vec.iter().peekable();
     while transposed.peek().is_some() {
         let op = ops.next().unwrap();
-        total += op.consume(
-            transposed
-                .by_ref()
-                .take_while(|x| !x.is_empty())
-                .map(|x| x.parse::<u64>().unwrap()),
-        );
+        total += op.consume(transposed.by_ref().map_while(|x| x.parse::<u64>().ok()));
     }
     total
 }
