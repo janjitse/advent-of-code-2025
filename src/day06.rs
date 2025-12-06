@@ -1,5 +1,39 @@
 use crate::parsers::*;
 
+enum Op {
+    Mul,
+    Add,
+}
+
+impl Op {
+    fn from_char(c: char) -> Self {
+        match c {
+            '+' => Op::Add,
+            '*' => Op::Mul,
+            _ => panic!(),
+        }
+    }
+    fn initial(&self) -> u64 {
+        match self {
+            Self::Add => 0,
+            Self::Mul => 1,
+        }
+    }
+    fn op(&self, x: u64, y: u64) -> u64 {
+        match self {
+            Self::Add => x + y,
+            Self::Mul => x * y,
+        }
+    }
+
+    fn consume<I>(&self, numbers: I) -> u64
+    where
+        I: Iterator<Item = u64>,
+    {
+        numbers.fold(self.initial(), |inter, x| Op::op(self, inter, x))
+    }
+}
+
 #[aoc(day6, part1)]
 pub fn part_a(contents: &str) -> u64 {
     let vec = parse_array_of_strings(contents);
@@ -7,31 +41,15 @@ pub fn part_a(contents: &str) -> u64 {
         .last()
         .unwrap()
         .iter()
-        .map(|x| x.chars().next().unwrap())
-        .collect::<Vec<char>>();
-    let mut intermed = vec![0; ops.len()];
-    for (idx, p) in intermed.iter_mut().enumerate() {
-        *p = match ops[idx] {
-            '*' => 1,
-            '+' => 0,
-            _ => panic!(),
-        };
-    }
-    // println!()
-    // println!("{:?}", ops);
-    // println!("{:?}", intermed);
+        .map(|x| Op::from_char(x.chars().next().unwrap()))
+        .collect::<Vec<Op>>();
+    let mut intermed: Vec<u64> = ops.iter().map(|x| x.initial()).collect();
     for line in vec.iter().take(vec.len() - 1) {
-        for (idx, p) in line.iter().enumerate() {
+        for ((op, p), update) in ops.iter().zip(line.into_iter()).zip(intermed.iter_mut()) {
             let num_p = p.parse::<u64>().unwrap();
-            intermed[idx] = match ops[idx] {
-                '*' => num_p * intermed[idx],
-                '+' => num_p + intermed[idx],
-                _ => panic!(),
-            };
+            *update = op.op(*update, num_p);
         }
     }
-    // let vec = parse(contents);
-    // vec.into_iter().sum()
     intermed.iter().sum()
 }
 
@@ -43,9 +61,9 @@ pub fn part_b(contents: &str) -> u64 {
         .unwrap()
         .iter()
         .filter(|x| **x == '+' || **x == '*')
-        .copied()
+        .map(|x| Op::from_char(*x))
         .rev()
-        .collect::<Vec<char>>();
+        .collect::<Vec<Op>>();
     let mut new_vec = vec![];
 
     for width_idx in (0..vec[0].len()).rev() {
@@ -57,31 +75,18 @@ pub fn part_b(contents: &str) -> u64 {
         let line_value = new_line.into_iter().collect::<String>();
         new_vec.push(String::from(line_value.trim()));
     }
-    // println!("{:?}", new_vec);
     let mut ops_idx = 0;
     let mut total = 0;
-    let mut intermed_value = match ops[ops_idx] {
-        '*' => 1,
-        '+' => 0,
-        _ => panic!(),
-    };
+    let mut intermed_value = ops[ops_idx].initial();
     for s in new_vec {
-        match s.len() {
-            0 => {
+        match s.is_empty() {
+            true => {
                 ops_idx += 1;
                 total += intermed_value;
-                intermed_value = match ops[ops_idx] {
-                    '*' => 1,
-                    '+' => 0,
-                    _ => panic!(),
-                };
+                intermed_value = ops[ops_idx].initial();
             }
-            _ => {
-                match ops[ops_idx] {
-                    '*' => intermed_value *= s.parse::<u64>().unwrap(),
-                    '+' => intermed_value += s.parse::<u64>().unwrap(),
-                    _ => panic!(),
-                };
+            false => {
+                intermed_value = ops[ops_idx].op(intermed_value, s.parse::<u64>().unwrap());
             }
         }
     }
