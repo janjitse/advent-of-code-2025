@@ -45,7 +45,7 @@ pub fn part_a(contents: &str) -> u64 {
         .collect::<Vec<Op>>();
     let mut intermed: Vec<u64> = ops.iter().map(|x| x.initial()).collect();
     for line in vec.iter().take(vec.len() - 1) {
-        for ((op, p), update) in ops.iter().zip(line.into_iter()).zip(intermed.iter_mut()) {
+        for ((op, p), update) in ops.iter().zip(line.iter()).zip(intermed.iter_mut()) {
             let num_p = p.parse::<u64>().unwrap();
             *update = op.op(*update, num_p);
         }
@@ -56,41 +56,34 @@ pub fn part_a(contents: &str) -> u64 {
 #[aoc(day6, part2)]
 pub fn part_b(contents: &str) -> u64 {
     let vec = parse_array_of_chars(contents);
-    let ops = vec
+    let mut ops = vec
         .last()
         .unwrap()
         .iter()
         .filter(|x| **x == '+' || **x == '*')
-        .map(|x| Op::from_char(*x))
-        .rev()
-        .collect::<Vec<Op>>();
+        .map(|x| Op::from_char(*x));
     let mut new_vec = vec![];
 
-    for width_idx in (0..vec[0].len()).rev() {
-        let mut new_line = vec![];
-
-        for row_idx in 0..vec.len() - 1 {
-            new_line.push(vec[row_idx][width_idx]);
-        }
-        let line_value = new_line.into_iter().collect::<String>();
-        new_vec.push(String::from(line_value.trim()));
+    for width_idx in 0..vec[0].len() {
+        let new_line = vec
+            .iter()
+            .take(vec.len() - 1)
+            .map(|s| s[width_idx])
+            .filter(|s| !s.is_whitespace())
+            .collect::<String>();
+        new_vec.push(new_line);
     }
-    let mut ops_idx = 0;
     let mut total = 0;
-    let mut intermed_value = ops[ops_idx].initial();
-    for s in new_vec {
-        match s.is_empty() {
-            true => {
-                ops_idx += 1;
-                total += intermed_value;
-                intermed_value = ops[ops_idx].initial();
-            }
-            false => {
-                intermed_value = ops[ops_idx].op(intermed_value, s.parse::<u64>().unwrap());
-            }
-        }
+    let mut transposed = new_vec.into_iter().peekable();
+    while transposed.peek().is_some() {
+        let op = ops.next().unwrap();
+        total += op.consume(
+            transposed
+                .by_ref()
+                .take_while(|x| !x.is_empty())
+                .map(|x| x.parse::<u64>().unwrap()),
+        );
     }
-    total += intermed_value;
     total
 }
 
