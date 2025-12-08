@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use bit_set::BitSet;
 
 use crate::parsers::*;
 
@@ -18,24 +18,20 @@ pub fn part_a(contents: &str) -> i64 {
             distances.push((distance, idx_1, idx_2 + idx_1 + 1));
         }
     }
-    distances.sort_unstable_by_key(|x| x.0);
-    distances = distances
-        .into_iter()
-        .take(nr_pairs)
-        .collect::<Vec<(i64, usize, usize)>>();
-    let mut heaps: Vec<HashSet<usize>> = vec![];
-    for (_, idx_1, idx_2) in distances {
-        let mut merged_heaps = HashSet::new();
+    distances.select_nth_unstable_by_key(nr_pairs, |x| x.0);
+    let mut heaps: Vec<BitSet> = vec![];
+    for (_, idx_1, idx_2) in distances.into_iter().take(nr_pairs) {
+        let mut merged_heaps = BitSet::new();
         for (heap_idx, h) in heaps.iter_mut().enumerate() {
-            if h.contains(&idx_1) || h.contains(&idx_2) {
+            if h.contains(idx_1) || h.contains(idx_2) {
                 merged_heaps.insert(heap_idx);
             }
         }
         let mut new_heaps = vec![];
-        let mut merged_heap: HashSet<usize> = HashSet::from_iter(vec![idx_1, idx_2]);
+        let mut merged_heap: BitSet = BitSet::from_iter(vec![idx_1, idx_2]);
         for (idx, h) in heaps.into_iter().enumerate() {
-            if merged_heaps.contains(&idx) {
-                merged_heap = HashSet::from_iter(merged_heap.union(&h).copied());
+            if merged_heaps.contains(idx) {
+                merged_heap.union_with(&h);
                 continue;
             }
             new_heaps.push(h);
@@ -64,21 +60,21 @@ pub fn part_b(contents: &str) -> i64 {
             distances.push((distance, idx_1, idx_2 + idx_1 + 1));
         }
     }
-    let total_idx: HashSet<usize> = HashSet::from_iter(0..vec.len());
     distances.sort_unstable_by_key(|x| x.0);
-    let mut heaps: Vec<HashSet<usize>> = vec![];
+    let mut heaps: Vec<BitSet> = vec![];
     for (_, idx_1, idx_2) in distances {
-        let mut merged_heaps = HashSet::new();
+        let mut merged_heaps = BitSet::new();
         for (heap_idx, h) in heaps.iter_mut().enumerate() {
-            if h.contains(&idx_1) || h.contains(&idx_2) {
+            if h.contains(idx_1) || h.contains(idx_2) {
                 merged_heaps.insert(heap_idx);
             }
         }
         let mut new_heaps = vec![];
-        let mut merged_heap: HashSet<usize> = HashSet::from_iter(vec![idx_1, idx_2]);
+        let mut merged_heap: BitSet = BitSet::from_iter(vec![idx_1, idx_2]);
         for (idx, h) in heaps.into_iter().enumerate() {
-            if merged_heaps.contains(&idx) {
-                merged_heap = HashSet::from_iter(merged_heap.union(&h).copied());
+            if merged_heaps.contains(idx) {
+                merged_heap.union_with(&h);
+                // merged_heap = FxHashSet::from_iter(merged_heap.union(h).copied());
                 continue;
             }
             new_heaps.push(h);
@@ -86,11 +82,8 @@ pub fn part_b(contents: &str) -> i64 {
         new_heaps.push(merged_heap);
         heaps = new_heaps;
 
-        if heaps.len() == 1 {
-            let heaps_vec = heaps.iter().collect::<Vec<&HashSet<usize>>>();
-            if *heaps_vec[0] == total_idx {
-                return vec[idx_2][0] * vec[idx_1][0];
-            }
+        if heaps[0].len() == vec.len() {
+            return vec[idx_2][0] * vec[idx_1][0];
         }
     }
     println!("{:?}", heaps);
