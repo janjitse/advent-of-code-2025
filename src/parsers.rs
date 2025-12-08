@@ -226,9 +226,19 @@ pub fn parse_array_of_strings(input: &str) -> Vec<Vec<&str>> {
 }
 
 #[allow(dead_code)]
-pub fn parse_comma_separated_ints(contents: &str) -> Vec<Vec<i64>> {
+pub fn parse_comma_separated_ints(contents: &str) -> Vec<(i64, i64, i64)> {
     contents
         .lines()
-        .map(|x| x.split(',').map(|x| x.parse().unwrap()).collect())
+        .map(|x| {
+            match &x
+                .split(',')
+                .take(3)
+                .map(|x| x.parse().unwrap())
+                .collect::<Vec<i64>>()[..]
+            {
+                &[first, second, third, ..] => (first, second, third),
+                _ => panic!(),
+            }
+        })
         .collect()
 }
