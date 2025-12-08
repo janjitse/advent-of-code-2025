@@ -224,3 +224,11 @@ pub fn parse_array_of_strings(input: &str) -> Vec<Vec<&str>> {
         .map(|l| l.split_ascii_whitespace().collect())
         .collect()
 }
+
+#[allow(dead_code)]
+pub fn parse_comma_separated_ints(contents: &str) -> Vec<Vec<i64>> {
+    contents
+        .lines()
+        .map(|x| x.split(',').map(|x| x.parse().unwrap()).collect())
+        .collect()
+}
