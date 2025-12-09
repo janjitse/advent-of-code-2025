@@ -242,3 +242,21 @@ pub fn parse_comma_separated_ints(contents: &str) -> Vec<(i64, i64, i64)> {
         })
         .collect()
 }
+
+#[allow(dead_code)]
+pub fn parse_comma_separated_ints2(contents: &str) -> Vec<(i64, i64)> {
+    contents
+        .lines()
+        .map(|x| {
+            match &x
+                .split(',')
+                .take(2)
+                .map(|x| x.parse().unwrap())
+                .collect::<Vec<i64>>()[..]
+            {
+                &[first, second, ..] => (first, second),
+                _ => panic!(),
+            }
+        })
+        .collect()
+}
