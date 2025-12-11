@@ -206,7 +206,7 @@ fn bezout(numbers: &[i64], mut target: i64, max: i64) -> Vec<Vec<i64>> {
         // println!("{:?}", pairs);
         return pairs;
     }
-    let s = reduced_numbers.last().unwrap();
+    let s = *reduced_numbers.last().unwrap();
     let mut output = vec![];
     // println!("{:?}, {:?}, {:?}", s, reduced_numbers, target);
     for rem in 0..=max {
@@ -245,22 +245,23 @@ fn row_reduce(
     }
 
     // println!("Pivot row: {:?}", pivot_row);
-    let mut new_matrix = vec![];
-    let mut new_par_matrix = vec![];
-    for (idx, (row, par_row)) in matrix.iter().zip(par_matrix.iter()).enumerate() {
-        if idx < pivot_row_idx {
-            new_matrix.push(row.clone());
-            new_par_matrix.push(par_row.clone());
-        } else if idx == pivot_row_idx {
+    let mut new_matrix = Vec::from_iter(matrix.iter().take(pivot_row_idx).cloned());
+    let mut new_par_matrix = Vec::from_iter(par_matrix.iter().take(pivot_row_idx).cloned());
+    for (idx, (row, par_row)) in matrix
+        .iter()
+        .zip(par_matrix.iter())
+        .enumerate()
+        .skip(pivot_row_idx)
+    {
+        if idx == pivot_row_idx {
             new_matrix.push(pivot_row.clone());
             new_par_matrix.push(pivot_row_par.clone());
         } else {
             let div = row[pivot] / pivot_row[pivot];
             let mut new_row = vector_subtract(row, &pivot_row, div);
-            let first_non_zero = new_row.iter().position(|x| *x != 0);
             let mut par_new_row = vector_subtract(par_row, &pivot_row_par, div);
 
-            if let Some(pos) = first_non_zero {
+            if let Some(pos) = new_row.iter().position(|x| *x != 0) {
                 if new_row[pos] != 1 {
                     let div = new_row[pos];
                     if new_row.iter().all(|x| *x % div == 0)
@@ -289,23 +290,17 @@ fn row_reduce_updown(
     pivot_row_idx: usize,
     par_matrix: &[Vec<i64>],
 ) -> (Vec<Vec<i64>>, Vec<Vec<i64>>) {
-    let mut pivot_row = matrix[pivot_row_idx].clone();
-    let mut pivot_row_par = par_matrix[pivot_row_idx].clone();
-    if pivot_row[pivot] < 0 {
-        pivot_row = pivot_row.into_iter().map(|x| -x).collect();
-        pivot_row_par = pivot_row_par.into_iter().map(|x| -x).collect();
-    }
+    let pivot_row = matrix[pivot_row_idx].clone();
+    let pivot_row_par = par_matrix[pivot_row_idx].clone();
 
-    // println!("Pivot row: {:?}", pivot_row);
     let mut new_matrix = vec![];
     let mut new_par_matrix = vec![];
     for (row, par_row) in matrix.iter().zip(par_matrix.iter()) {
         let div = row[pivot] / pivot_row[pivot];
         let mut new_row = vector_subtract(row, &pivot_row, div);
-        let first_non_zero = new_row.iter().position(|x| *x != 0);
         let mut par_new_row = vector_subtract(par_row, &pivot_row_par, div);
 
-        if let Some(pos) = first_non_zero {
+        if let Some(pos) = new_row.iter().position(|x| *x != 0) {
             if new_row[pos] != 1 {
                 let div = new_row[pos];
                 if new_row.iter().all(|x| *x % div == 0)
@@ -386,21 +381,18 @@ fn recurse_b(
     let remaining_non_zero: Vec<usize> = remaining
         .iter()
         .enumerate()
-        .filter(|(_idx, x)| **x != 0)
-        .map(|(idx, _)| idx)
+        .filter_map(|(idx, x)| (*x != 0).then_some(idx))
         .collect();
     let last_remaining = *remaining_non_zero.last().unwrap();
     let bezout_selection_idx = switches[last_remaining]
         .iter()
         .enumerate()
-        .filter(|(_, x)| **x != 0)
-        .map(|(idx, _)| idx)
+        .filter_map(|(idx, x)| (*x != 0).then_some(idx))
         .collect::<Vec<usize>>();
     let bezout_coeff = switches[last_remaining]
         .iter()
         .enumerate()
-        .filter(|(idx, _)| bezout_selection_idx.contains(idx))
-        .map(|(_, v)| *v)
+        .filter_map(|(idx, &v)| bezout_selection_idx.contains(&idx).then_some(v))
         .collect::<Vec<i64>>();
     let bezout_pairs = bezout(&bezout_coeff, remaining[last_remaining], max);
     if bezout_pairs.is_empty() || bezout_pairs[0].is_empty() {
