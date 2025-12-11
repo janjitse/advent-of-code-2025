@@ -260,3 +260,21 @@ pub fn parse_comma_separated_ints2(contents: &str) -> Vec<(i64, i64)> {
         })
         .collect()
 }
+
+#[allow(dead_code)]
+pub fn parse_string_colon_followed_by_whitespace_separated(input: &str) -> Vec<(&str, Vec<&str>)> {
+    let time_start = SystemTime::now();
+    let mut lines = input.lines();
+    let output1 = lines
+        .by_ref()
+        .take_while(|line| !line.is_empty())
+        .map(|line| {
+            let l: Vec<&str> = line.split(':').collect();
+            let left = l[0];
+            let right = l[1].split_ascii_whitespace().collect();
+            (left, right)
+        })
+        .collect();
+    println!("Parsing: {:?}", time_start.elapsed().unwrap());
+    output1
+}
