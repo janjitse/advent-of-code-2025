@@ -30,7 +30,7 @@ fn create_compressed(coordinates: Vec<i64>) -> (Vec<i64>, HashMap<i64, usize>) {
     compress_addition.dedup();
     let mut inverse_coordinates = HashMap::new();
     for (idx, v) in compress_addition.iter().enumerate() {
-        inverse_coordinates.insert(*v, idx as usize);
+        inverse_coordinates.insert(*v, idx);
     }
     (compress_addition, inverse_coordinates)
 }
