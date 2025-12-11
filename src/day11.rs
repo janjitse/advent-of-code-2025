@@ -56,7 +56,7 @@ pub fn part_b(contents: &str) -> u64 {
         for i in connections.get(&last_item).unwrap() {
             let new_route = next.iter().copied().chain(vec![*i]).collect::<Vec<&str>>();
             if *i == "fft" {
-                println!("Warning! fft found after dac!");
+                panic!("Panic! fft found after dac!");
             }
             if *i == "out" {
                 for node in new_route.iter() {
@@ -70,7 +70,7 @@ pub fn part_b(contents: &str) -> u64 {
     }
     println!("From dac to out {:?}", dac_out_paths.len());
 
-    let mut colouring_fft: HashMap<String, (u64, bool, HashSet<&str>)> = HashMap::new();
+    let mut colouring_fft: HashMap<String, (u64, HashSet<&str>)> = HashMap::new();
     let inputs_fft = inputs.clone();
     let mut todo_fft = vec![];
     let mut svr_fft_paths: u64 = 0;
@@ -80,11 +80,10 @@ pub fn part_b(contents: &str) -> u64 {
     while let Some((next, prev, count)) = todo_fft.pop() {
         let item = colouring_fft
             .entry(next.to_string())
-            .or_insert((0, false, HashSet::new()));
+            .or_insert((0, HashSet::new()));
         item.0 += count;
-        item.2.insert(prev);
-        if item.2 == *inputs_fft.get(next).unwrap() {
-            item.1 = true;
+        item.1.insert(prev);
+        if item.1 == *inputs_fft.get(next).unwrap() {
             for i in connections.get(next).unwrap() {
                 if *i == "fft" {
                     svr_fft_paths += item.0;
@@ -101,7 +100,7 @@ pub fn part_b(contents: &str) -> u64 {
 
     println!("From svr to fft {:?}", svr_fft_paths);
 
-    let mut colouring_dac: HashMap<String, (u64, bool, HashSet<&str>)> = HashMap::new();
+    let mut colouring_dac: HashMap<String, (u64, HashSet<&str>)> = HashMap::new();
     let mut todo_dac = vec![];
     let mut fft_dac_paths: u64 = 0;
     for i in connections.get("fft").unwrap() {
@@ -110,11 +109,10 @@ pub fn part_b(contents: &str) -> u64 {
     while let Some((next, prev, count)) = todo_dac.pop() {
         let item = colouring_dac
             .entry(next.to_string())
-            .or_insert((0, false, HashSet::new()));
+            .or_insert((0, HashSet::new()));
         item.0 += count;
-        item.2.insert(prev);
-        if item.2 == *inputs.get(next).unwrap() {
-            item.1 = true;
+        item.1.insert(prev);
+        if item.1 == *inputs.get(next).unwrap() {
             for i in connections.get(next).unwrap() {
                 if *i == "dac" {
                     fft_dac_paths += item.0;
