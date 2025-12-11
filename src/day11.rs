@@ -12,7 +12,7 @@ pub fn part_a(contents: &str) -> u64 {
     // println!("{:?}", connections);
     let mut todo = vec![];
     let mut out_paths = 0;
-    for i in connections.get(&"you".to_string()).unwrap() {
+    for i in connections.get("you").unwrap() {
         todo.push(vec![*i]);
     }
     while let Some(next) = todo.pop() {
@@ -24,18 +24,13 @@ pub fn part_a(contents: &str) -> u64 {
             if *i == "out" {
                 out_paths += 1;
             } else {
-                let new_route = next
-                    .iter()
-                    .map(|x| *x)
-                    .chain(vec![*i])
-                    .collect::<Vec<&str>>();
+                let new_route = next.iter().copied().chain(vec![*i]).collect::<Vec<&str>>();
 
                 todo.push(new_route);
             }
         }
     }
-
-    return out_paths;
+    out_paths
 }
 
 #[aoc(day11, part2)]
@@ -46,27 +41,20 @@ pub fn part_b(contents: &str) -> u64 {
 
     for (start, out) in vec {
         for o in out.iter() {
-            inputs
-                .entry(o.to_string())
-                .or_insert(HashSet::new())
-                .insert(start);
+            inputs.entry(o.to_string()).or_default().insert(start);
         }
         connections.insert(start.to_string(), out);
     }
     let mut todo_out = vec![];
     let mut after_dac = HashSet::new();
     let mut dac_out_paths: HashSet<Vec<&str>> = HashSet::new();
-    for i in connections.get(&"dac".to_string()).unwrap() {
+    for i in connections.get("dac").unwrap() {
         todo_out.push(vec![*i]);
     }
     while let Some(next) = todo_out.pop() {
         let last_item = next.last().unwrap().to_string();
         for i in connections.get(&last_item).unwrap() {
-            let new_route = next
-                .iter()
-                .map(|x| *x)
-                .chain(vec![*i])
-                .collect::<Vec<&str>>();
+            let new_route = next.iter().copied().chain(vec![*i]).collect::<Vec<&str>>();
             if *i == "fft" {
                 println!("Warning! fft found after dac!");
             }
@@ -86,7 +74,7 @@ pub fn part_b(contents: &str) -> u64 {
     let inputs_fft = inputs.clone();
     let mut todo_fft = vec![];
     let mut svr_fft_paths: u64 = 0;
-    for i in connections.get(&"svr".to_string()).unwrap() {
+    for i in connections.get("svr").unwrap() {
         todo_fft.push((*i, "svr", 1u64));
     }
     while let Some((next, prev, count)) = todo_fft.pop() {
@@ -112,15 +100,11 @@ pub fn part_b(contents: &str) -> u64 {
     }
 
     println!("From svr to fft {:?}", svr_fft_paths);
-    let mut todo_fft = vec![];
-    for i in connections.get(&"svr".to_string()).unwrap() {
-        todo_fft.push(vec![*i]);
-    }
 
     let mut colouring_dac: HashMap<String, (u64, bool, HashSet<&str>)> = HashMap::new();
     let mut todo_dac = vec![];
     let mut fft_dac_paths: u64 = 0;
-    for i in connections.get(&"fft".to_string()).unwrap() {
+    for i in connections.get("fft").unwrap() {
         todo_dac.push((*i, "fft", 1u64));
     }
     while let Some((next, prev, count)) = todo_dac.pop() {
@@ -149,7 +133,7 @@ pub fn part_b(contents: &str) -> u64 {
         fft_dac_paths,
         dac_out_paths.len()
     );
-    (svr_fft_paths as u64 * fft_dac_paths * dac_out_paths.len() as u64) as u64
+    svr_fft_paths * fft_dac_paths * dac_out_paths.len() as u64
 }
 
 #[cfg(test)]
