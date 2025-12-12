@@ -95,6 +95,7 @@ pub fn part_b(contents: &str) -> u64 {
             .or_insert((0, HashSet::new()));
         item.0 += count;
         item.1.insert(prev);
+        // inputs.get_mut(next).unwrap().remove(prev);
         if item.1 == *inputs.get(next).unwrap() {
             for i in connections.get(next).unwrap() {
                 if *i == "dac" {

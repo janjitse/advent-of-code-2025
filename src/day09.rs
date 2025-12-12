@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 use crate::parsers::*;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 #[aoc(day9, part1)]
 pub fn part_a(contents: &str) -> i64 {
@@ -18,17 +17,16 @@ pub fn part_a(contents: &str) -> i64 {
     max_rectangle
 }
 
-fn create_compressed(coordinates: Vec<i64>) -> (Vec<i64>, HashMap<i64, usize>) {
+fn create_compressed(coordinates: Vec<i64>) -> (Vec<i64>, FxHashMap<i64, usize>) {
     let mut compress_addition = vec![];
     for v in coordinates.iter() {
         compress_addition.push(v + 1);
     }
     compress_addition.push(0);
-    compress_addition.push(i64::MAX);
     compress_addition.extend_from_slice(&coordinates);
     compress_addition.sort_unstable();
     compress_addition.dedup();
-    let mut inverse_coordinates = HashMap::new();
+    let mut inverse_coordinates = FxHashMap::default();
     for (idx, v) in compress_addition.iter().enumerate() {
         inverse_coordinates.insert(*v, idx);
     }
@@ -42,7 +40,7 @@ pub fn part_b(contents: &str) -> i64 {
         create_compressed(vec.iter().map(|x| x.0).collect::<Vec<i64>>());
     let (compressed_coordinates_y, inverse_compressed_y) =
         create_compressed(vec.iter().map(|x| x.1).collect::<Vec<i64>>());
-    let mut green_lines = HashSet::new();
+    let mut green_lines = FxHashSet::default();
     for (idx1, (x1, y1)) in vec.iter().enumerate() {
         for (x2, y2) in vec.iter().cycle().skip(idx1 + 1).take(1) {
             if y1 == y2 {
@@ -111,14 +109,12 @@ pub fn part_b(contents: &str) -> i64 {
                 let y2_c = inverse_compressed_y[y2];
                 let x1_c = inverse_compressed_x[x1];
                 let x2_c = inverse_compressed_x[x2];
-                let corner_left_up = (x1_c.min(x2_c), y1_c.min(y2_c));
-                let corner_left_down = (x1_c.min(x2_c), y1_c.max(y2_c));
-                let corner_right_down = (x1_c.max(x2_c), y1_c.max(y2_c));
-                let corner_right_up = (x1_c.max(x2_c), y1_c.min(y2_c));
-                let value_left_up = prefix_sum[corner_left_up.1][corner_left_up.0];
-                let value_left_down = prefix_sum[corner_left_down.1][corner_left_down.0];
-                let value_right_up = prefix_sum[corner_right_up.1][corner_right_up.0];
-                let value_right_down = prefix_sum[corner_right_down.1][corner_right_down.0];
+                let (left, right) = (x1_c.min(x2_c), x1_c.max(x2_c));
+                let (down, up) = (y1_c.min(y2_c), y1_c.max(y2_c));
+                let value_left_up = prefix_sum[up][left];
+                let value_left_down = prefix_sum[down][left];
+                let value_right_up = prefix_sum[up][right];
+                let value_right_down = prefix_sum[down][right];
                 if value_right_down - value_left_down - value_right_up + value_left_up == 0 {
                     max_rectangle = rectangle_size;
                 }

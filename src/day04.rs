@@ -55,6 +55,7 @@ pub fn part_b(contents: &str) -> i32 {
         (usize::MAX, usize::MAX),
     ];
     let mut neighbors = FxHashMap::default();
+    let mut todo: Vec<(usize, usize)> = vec![];
     for (row_idx, line) in vec.iter().enumerate() {
         for (col_idx, val) in line.iter().enumerate() {
             if *val == '@' {
@@ -71,14 +72,12 @@ pub fn part_b(contents: &str) -> i32 {
                     }
                 }
                 neighbors.insert((row_idx, col_idx), sur_papers);
+                if sur_papers < 3 {
+                    todo.push((row_idx, col_idx));
+                }
             }
         }
     }
-    let mut todo: Vec<(usize, usize)> = neighbors
-        .iter()
-        .filter(|&(_, val)| *val < 4)
-        .map(|(idx, _)| *idx)
-        .collect();
     while let Some(point) = todo.pop() {
         for dir in directions.iter() {
             let new_point = (point.0.wrapping_add(dir.0), point.1.wrapping_add(dir.1));
