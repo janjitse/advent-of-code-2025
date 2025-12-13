@@ -3,7 +3,7 @@ use bit_set::BitSet;
 use crate::parsers::*;
 
 #[aoc(day8, part1)]
-pub fn part_a(contents: &str) -> i64 {
+pub fn part_a(contents: &str) -> usize {
     let vec = parse_comma_separated_ints(contents);
     let nr_pairs = match vec.len() {
         20 => 10,
@@ -40,12 +40,8 @@ pub fn part_a(contents: &str) -> i64 {
             _ => heaps.push(merged_heap),
         };
     }
-    heaps.select_nth_unstable_by_key(3, |x| -(x.len() as i64));
-    let mut total = 1;
-    for h in heaps.iter().take(3) {
-        total *= h.len() as i64
-    }
-    total
+    heaps.select_nth_unstable_by_key(3, |x| -(x.len() as isize));
+    heaps.into_iter().take(3).map(|x| x.len()).product()
 }
 
 #[aoc(day8, part2)]
@@ -60,8 +56,13 @@ pub fn part_b(contents: &str) -> i64 {
             distances.push((distance, idx_1, idx_2 + idx_1 + 1));
         }
     }
+    // distances.sort_unstable();
+    // distances.shuffle(&mut rng());
     distances.sort_unstable_by_key(|x| x.0);
+
+    // distances.select_nth_unstable(7880);
     let mut heaps: Vec<BitSet> = Vec::with_capacity(vec.len());
+    // let mut counter = 0;
     for (_, idx_1, idx_2) in distances {
         let mut merged_heaps = Vec::with_capacity(2);
         for (heap_idx, h) in heaps.iter().enumerate() {
@@ -81,7 +82,115 @@ pub fn part_b(contents: &str) -> i64 {
             }
             _ => heaps.push(merged_heap),
         };
+        // counter += 1;
         if heaps[0].len() == vec.len() {
+            // println!("{:?}", counter);
+            return vec[idx_2].0 * vec[idx_1].0;
+        }
+    }
+    unreachable!()
+}
+
+struct Node {
+    parent: usize,
+    size: usize,
+    // rank: usize,
+}
+
+struct DisjointSetUnion {
+    nodes: Vec<Node>,
+}
+
+impl DisjointSetUnion {
+    fn new(len: usize) -> Self {
+        Self {
+            nodes: (0..len).map(|parent| Node { parent, size: 1 }).collect(),
+        }
+    }
+
+    #[allow(dead_code)]
+    fn parent_halving(&mut self, mut x: usize) -> usize {
+        while self.nodes[x].parent != x {
+            // Path halving
+            self.nodes[x].parent = self.nodes[self.nodes[x].parent].parent;
+            x = self.nodes[x].parent;
+        }
+        x
+    }
+
+    #[allow(dead_code)]
+    fn parent_splitting(&mut self, mut x: usize) -> usize {
+        while self.nodes[x].parent != x {
+            // Path splitting
+            (x, self.nodes[x].parent) = (
+                self.nodes[x].parent,
+                self.nodes[self.nodes[x].parent].parent,
+            );
+        }
+        x
+    }
+
+    fn merge_sets(&mut self, u: usize, v: usize) -> usize {
+        let (mut parent_u, mut parent_v) = (self.parent_splitting(u), self.parent_splitting(v));
+
+        if parent_u == parent_v {
+            return self.nodes[parent_u].size;
+        }
+
+        if self.nodes[parent_u].size < self.nodes[parent_v].size {
+            std::mem::swap(&mut parent_u, &mut parent_v);
+        }
+        self.nodes[parent_v].parent = parent_u;
+        self.nodes[parent_u].size += self.nodes[parent_v].size;
+        self.nodes[parent_u].size
+    }
+}
+
+#[aoc(day8, part1, disjoint_set)]
+pub fn part_a_disjoint_set(contents: &str) -> usize {
+    let vec = parse_comma_separated_ints(contents);
+    let nr_pairs = match vec.len() {
+        20 => 10,
+        _ => 1000,
+    };
+    let mut distances = Vec::with_capacity((vec.len() * (vec.len() - 1)) / 2);
+    for (idx_1, vec_1) in vec.iter().enumerate() {
+        for (idx_2, vec_2) in vec.iter().skip(idx_1 + 1).enumerate() {
+            let distance = (vec_1.0 - vec_2.0).pow(2)
+                + (vec_1.1 - vec_2.1).pow(2)
+                + (vec_1.2 - vec_2.2).pow(2);
+            distances.push((distance, idx_1, idx_2 + idx_1 + 1));
+        }
+    }
+    distances.select_nth_unstable_by_key(nr_pairs, |x| x.0);
+
+    let mut circuits = DisjointSetUnion::new(vec.len());
+    for (_, idx_1, idx_2) in distances.into_iter().take(nr_pairs) {
+        circuits.merge_sets(idx_1, idx_2);
+    }
+    circuits
+        .nodes
+        .select_nth_unstable_by_key(3, |x| -(x.size as isize));
+    circuits.nodes.into_iter().take(3).map(|x| x.size).product()
+}
+
+#[aoc(day8, part2, disjoint_set)]
+pub fn part_b_disjoint_set(contents: &str) -> i64 {
+    let vec = parse_comma_separated_ints(contents);
+    let mut distances = Vec::with_capacity((vec.len() * (vec.len() - 1)) / 2);
+    for (idx_1, vec_1) in vec.iter().enumerate() {
+        for (idx_2, vec_2) in vec.iter().skip(idx_1 + 1).enumerate() {
+            let distance = (vec_1.0 - vec_2.0).pow(2)
+                + (vec_1.1 - vec_2.1).pow(2)
+                + (vec_1.2 - vec_2.2).pow(2);
+            distances.push((distance, idx_1, idx_2 + idx_1 + 1));
+        }
+    }
+    distances.sort_unstable_by_key(|x| x.0);
+
+    let mut circuits = DisjointSetUnion::new(vec.len());
+    for (_, idx_1, idx_2) in distances {
+        if circuits.merge_sets(idx_1, idx_2) == vec.len() {
             return vec[idx_2].0 * vec[idx_1].0;
         }
     }
