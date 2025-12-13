@@ -40,12 +40,14 @@ pub fn part_a(contents: &str) -> i64 {
         parse(contents);
     let mut output = 0;
     for b in boxes {
-        if b.0[0]/3 * b.0[1]/3 >=  b.1.iter().sum::<i64>() {
+        if b.0[0] / 3 * b.0[1] / 3 >= b.1.iter().sum::<i64>() {
             output += 1;
         }
-        if b.0[0] * b.0[1] >= 7 * b.1.iter().sum::<i64>() &&  b.0[0] * b.0[1] < 9 * b.1.iter().sum::<i64>(){
+        if b.0[0] * b.0[1] >= 7 * b.1.iter().sum::<i64>()
+            && b.0[0] * b.0[1] < 9 * b.1.iter().sum::<i64>()
+        {
             // Do something complicated...?
-             println!("{:?}, {:?}", b.0, b.1);
+            println!("{:?}, {:?}", b.0, b.1);
         }
     }
     output
