@@ -56,13 +56,9 @@ pub fn part_b(contents: &str) -> i64 {
             distances.push((distance, idx_1, idx_2 + idx_1 + 1));
         }
     }
-    // distances.sort_unstable();
-    // distances.shuffle(&mut rng());
     distances.sort_unstable_by_key(|x| x.0);
 
-    // distances.select_nth_unstable(7880);
     let mut heaps: Vec<BitSet> = Vec::with_capacity(vec.len());
-    // let mut counter = 0;
     for (_, idx_1, idx_2) in distances {
         let mut merged_heaps = Vec::with_capacity(2);
         for (heap_idx, h) in heaps.iter().enumerate() {
@@ -155,11 +151,11 @@ pub fn part_a_disjoint_set(contents: &str) -> usize {
     };
     let mut distances = Vec::with_capacity((vec.len() * (vec.len() - 1)) / 2);
     for (idx_1, vec_1) in vec.iter().enumerate() {
-        for (idx_2, vec_2) in vec.iter().skip(idx_1 + 1).enumerate() {
+        for (idx_2, vec_2) in vec.iter().enumerate().skip(idx_1 + 1) {
             let distance = (vec_1.0 - vec_2.0).pow(2)
                 + (vec_1.1 - vec_2.1).pow(2)
                 + (vec_1.2 - vec_2.2).pow(2);
-            distances.push((distance, idx_1, idx_2 + idx_1 + 1));
+            distances.push((distance, idx_1, idx_2));
         }
     }
     distances.select_nth_unstable_by_key(nr_pairs, |x| x.0);
@@ -179,11 +175,11 @@ pub fn part_b_disjoint_set(contents: &str) -> i64 {
     let vec = parse_comma_separated_ints(contents);
     let mut distances = Vec::with_capacity((vec.len() * (vec.len() - 1)) / 2);
     for (idx_1, vec_1) in vec.iter().enumerate() {
-        for (idx_2, vec_2) in vec.iter().skip(idx_1 + 1).enumerate() {
+        for (idx_2, vec_2) in vec.iter().enumerate().skip(idx_1 + 1) {
             let distance = (vec_1.0 - vec_2.0).pow(2)
                 + (vec_1.1 - vec_2.1).pow(2)
                 + (vec_1.2 - vec_2.2).pow(2);
-            distances.push((distance, idx_1, idx_2 + idx_1 + 1));
+            distances.push((distance, idx_1, idx_2));
         }
     }
     distances.sort_unstable_by_key(|x| x.0);
