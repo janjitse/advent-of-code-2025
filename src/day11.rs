@@ -1,11 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::parsers::*;
 
 #[aoc(day11, part1)]
 pub fn part_a(contents: &str) -> u64 {
     let vec = parse_string_colon_followed_by_whitespace_separated(contents);
-    let mut connections: HashMap<String, Vec<&str>> = HashMap::new();
+    let mut connections: FxHashMap<String, Vec<&str>> = FxHashMap::default();
     for (start, out) in vec {
         connections.insert(start.to_string(), out);
     }
@@ -36,8 +36,8 @@ pub fn part_a(contents: &str) -> u64 {
 #[aoc(day11, part2)]
 pub fn part_b(contents: &str) -> u64 {
     let vec = parse_string_colon_followed_by_whitespace_separated(contents);
-    let mut connections: HashMap<String, Vec<&str>> = HashMap::new();
-    let mut inputs: HashMap<String, HashSet<&str>> = HashMap::new();
+    let mut connections: FxHashMap<String, Vec<&str>> = FxHashMap::default();
+    let mut inputs: FxHashMap<String, FxHashSet<&str>> = FxHashMap::default();
 
     for (start, out) in vec {
         for o in out.iter() {
@@ -50,7 +50,7 @@ pub fn part_b(contents: &str) -> u64 {
         .filter(|(_, set)| set.is_empty())
         .map(|(x, _s)| x)
         .collect::<Vec<&String>>();
-    let mut colouring: HashMap<String, (u64, HashSet<&str>)> = HashMap::new();
+    let mut colouring: FxHashMap<String, (u64, FxHashSet<&str>)> = FxHashMap::default();
 
     let mut todo = vec![];
     for i in connections.get("svr").unwrap() {
@@ -67,7 +67,7 @@ pub fn part_b(contents: &str) -> u64 {
     while let Some((next, prev, count)) = todo.pop() {
         let item = colouring
             .entry(next.to_string())
-            .or_insert((0, HashSet::new()));
+            .or_insert((0, FxHashSet::default()));
         item.0 += count;
         item.1.insert(prev);
         if item.1 == *inputs.get(next).unwrap() {
@@ -92,7 +92,7 @@ pub fn part_b(contents: &str) -> u64 {
     while let Some((next, prev, count)) = todo.pop() {
         let item = colouring
             .entry(next.to_string())
-            .or_insert((0, HashSet::new()));
+            .or_insert((0, FxHashSet::default()));
         item.0 += count;
         item.1.insert(prev);
         // inputs.get_mut(next).unwrap().remove(prev);
@@ -119,7 +119,7 @@ pub fn part_b(contents: &str) -> u64 {
     while let Some((next, prev, count)) = todo.pop() {
         let item = colouring
             .entry(next.to_string())
-            .or_insert((0, HashSet::new()));
+            .or_insert((0, FxHashSet::default()));
         item.0 += count;
         item.1.insert(prev);
         if item.1 == *inputs.get(next).unwrap() {
