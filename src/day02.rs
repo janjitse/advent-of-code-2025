@@ -76,29 +76,15 @@ pub fn part_a_smarter(contents: &str) -> u128 {
     for (id_start, id_end) in vec {
         let digits_start = (num_digits(id_start, 10) as f64 / 2.0).ceil() as usize;
         let digits_end = max(num_digits(id_end, 10) / 2, 1);
-        let mut invalid_check_start = if num_digits(id_start, 10).is_multiple_of(2) {
-            id_start / 10u64.pow(digits_start as u32)
-        } else {
-            10u64.pow(digits_start as u32 - 1)
-        };
         for digits in digits_start..=digits_end {
             let factor = 10u64.pow(digits as u32) + 1;
 
-            if num_digits(invalid_check_start, 10) < digits {
-                invalid_check_start = 10u64.pow(digits as u32 - 1);
-            }
-
+            let mut invalid_check_start = 10u64.pow(digits as u32 - 1).max(id_start / factor);
             while invalid_check_start * factor < id_start {
                 invalid_check_start += 1;
             }
 
-            let mut end_invalid_ids = 10u64.pow(digits as u32) - 1;
-            if end_invalid_ids * factor > id_end {
-                end_invalid_ids = id_end / 10u64.pow(digits as u32);
-                while end_invalid_ids * factor > id_end {
-                    end_invalid_ids -= 1;
-                }
-            }
+            let end_invalid_ids = (10u64.pow(digits as u32) - 1).min(id_end / factor);
             if end_invalid_ids < invalid_check_start {
                 continue;
             }
@@ -139,7 +125,8 @@ pub fn part_b(contents: &str) -> u64 {
     invalid_id_sum
 }
 
-#[aoc(day2, part2, binary_search)]
+// #[aoc(day2, part2, binary_search)]
+#[allow(dead_code)]
 pub fn part_b_binary(contents: &str) -> u128 {
     let vec = parse(contents);
     let mut invalid_id_sum = 0;
@@ -169,6 +156,79 @@ pub fn part_b_binary(contents: &str) -> u128 {
             .skip(start_idx)
             .map(|&x| x as u128)
             .sum::<u128>();
+    }
+    invalid_id_sum
+}
+
+fn determine_sign(mut num_digits: usize) -> i32 {
+    let small_primes = [2, 3, 5, 7, 11]; // Should be enough up to 121 digit numbers
+    let mut nr_prime_div = 0;
+    for p in small_primes {
+        let mut nr_divisors = 0;
+        while num_digits.is_multiple_of(p) {
+            num_digits /= p;
+            nr_divisors += 1;
+        }
+        match nr_divisors {
+            2.. => return 0,
+            1 => {
+                nr_prime_div += 1;
+            }
+            _ => continue,
+        }
+    }
+    if num_digits > 1 {
+        nr_prime_div += 1;
+    }
+    match nr_prime_div % 2 {
+        0 => -1,
+        _ => 1,
+    }
+}
+
+#[aoc(day2, part2, smarter)]
+pub fn part_b_smarter(contents: &str) -> i128 {
+    let vec = parse(contents);
+    let mut invalid_id_sum = 0;
+    let max_id = vec.iter().max_by_key(|x| x.1).unwrap().1;
+    let max_num_digits = num_digits(max_id, 10);
+    for rep in 2..=max_num_digits {
+        let sign = determine_sign(rep);
+        if sign == 0 {
+            continue;
+        }
+        for (id_start, id_end) in vec.iter() {
+            if num_digits(*id_end, 10) < rep {
+                continue;
+            }
+            let digits_start = (num_digits(*id_start, 10) as f64 / rep as f64).ceil() as usize;
+            let digits_end = num_digits(*id_end, 10) / rep;
+
+            for digits in digits_start..=digits_end {
+                let mut factor = 0;
+
+                for r in 0..rep {
+                    factor += 10u64.pow(r as u32 * digits as u32);
+                }
+
+                let mut invalid_check_start = 10u64.pow(digits as u32 - 1).max(*id_start / factor);
+
+                if invalid_check_start * factor < *id_start {
+                    invalid_check_start += 1;
+                }
+
+                let end_invalid_ids = (10u64.pow(digits as u32) - 1).min(id_end / factor);
+
+                if end_invalid_ids < invalid_check_start {
+                    continue;
+                }
+                let n = end_invalid_ids - invalid_check_start;
+                invalid_id_sum += sign as i128
+                    * factor as i128
+                    * ((n + 1) as i128 * invalid_check_start as i128
+                        + ((n as i128 * (n as i128 + 1)) / 2));
+            }
+        }
     }
     invalid_id_sum
 }
@@ -207,6 +267,6 @@ mod tests {
         let s = Path::new(file!()).file_stem().unwrap().to_str().unwrap();
         let file_path = format!("input/2025/{}_small.txt", s);
         let contents = fs::read_to_string(file_path).expect("file not found");
-        assert_eq!(part_b(&contents), 4174379265);
+        assert_eq!(part_b_smarter(&contents), 4174379265);
     }
 }
