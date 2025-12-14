@@ -12,5 +12,6 @@ rustc-hash = "2.1.1"
 
 [profile.release]
 lto = "fat"
-overflow-checks = true
-debug-assertions = true
+overflow-checks = false
+debug-assertions = false
+panic = "abort"
