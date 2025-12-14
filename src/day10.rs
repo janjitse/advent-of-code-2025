@@ -1,3 +1,5 @@
+use rustc_hash::FxHashMap;
+
 pub fn parse(contents: &str) -> Vec<(Vec<bool>, Vec<Vec<u32>>, Vec<i64>)> {
     let mut output = vec![];
     for line in contents.lines() {
@@ -33,14 +35,13 @@ pub fn parse(contents: &str) -> Vec<(Vec<bool>, Vec<Vec<u32>>, Vec<i64>)> {
 
 fn powerset<T>(s: &[T]) -> Vec<Vec<T>>
 where
-    T: Clone,
+    T: Copy,
 {
     (0..2usize.pow(s.len() as u32))
         .map(|i| {
             s.iter()
                 .enumerate()
-                .filter(|&(t, _)| (i >> t) % 2 == 1)
-                .map(|(_, element)| element.clone())
+                .filter_map(|(idx, &x)| ((i >> idx) % 2 == 1).then_some(x))
                 .collect()
         })
         .collect()
@@ -51,39 +52,139 @@ pub fn part_a(contents: &str) -> u64 {
     let lines = parse(contents);
     let mut output = 0;
     for (bitmap, toggles, _) in lines {
-        let mut target = 0;
-        for (idx, val) in bitmap.iter().enumerate() {
-            if *val {
-                target += 1 << idx as u32
-            }
-        }
-        let mut switches = vec![];
-        for t in toggles.iter() {
-            let mut switch_value = 0;
-            for v in t {
-                switch_value += 1 << v;
-            }
-            switches.push(switch_value);
-        }
-        let mut min_length = usize::MAX;
-        for t in powerset(&switches) {
-            let t_len = t.len();
-            let val = t.into_iter().fold(target, |x, y| x ^ y);
-            if val == 0 && t_len < min_length {
-                min_length = t_len;
-            }
-        }
+        let target = bitmap
+            .iter()
+            .enumerate()
+            .fold(0, |acc, (idx, val)| acc + ((*val as i32) << (idx as u32)));
+        let switches = toggles
+            .iter()
+            .map(|x| x.iter().fold(0, |acc, v| acc + (1 << v)))
+            .collect::<Vec<i32>>();
+
+        let min_length = presses_to_target_min(target, &switches);
         output += min_length as u64;
     }
     output
 }
 
-#[aoc(day10, part2, faster)]
+fn presses_to_target_min(target: i32, switches: &[i32]) -> usize {
+    let mut min_length = usize::MAX;
+    for t in powerset(switches) {
+        let t_len = t.len();
+        let val = t.iter().fold(target, |x, y| x ^ y);
+        if val == 0 && t_len < min_length {
+            min_length = t_len;
+        }
+    }
+    min_length
+}
+
+fn presses_to_target(switches: &[i32]) -> FxHashMap<i32, Vec<Vec<i32>>> {
+    let mut cache: FxHashMap<i32, Vec<Vec<i32>>> = FxHashMap::default();
+    let min_presses: Vec<(i32, Vec<i32>)> = powerset(switches)
+        .into_iter()
+        .map(|t| (t.iter().fold(0, |x, y| x ^ y), t))
+        .collect();
+    for (k, vec) in min_presses.iter() {
+        cache.entry(*k).or_default().push(vec.clone());
+    }
+    cache
+}
+
+#[aoc(day10, part2, bifurcation)]
+pub fn part_b_bifurcation(contents: &str) -> i64 {
+    let lines = parse(contents);
+    let mut output = 0;
+    for (_idx, (_, toggles, joltage)) in lines.into_iter().enumerate() {
+        // println!("Doing case {:?}", _idx);
+        let switches = toggles
+            .iter()
+            .map(|x| x.iter().fold(0, |acc, v| acc + (1 << v)))
+            .collect::<Vec<i32>>();
+        let mut cache: FxHashMap<Vec<i64>, Option<u64>> = FxHashMap::default();
+        let cache_even = presses_to_target(&switches);
+        if let Some(min_presses) =
+            recurse_bifurcation(joltage, &switches, &toggles, &mut cache, &cache_even)
+        {
+            // println!("{:?}", min_presses);
+            output += min_presses as i64;
+        } else {
+            println!("No solution :(");
+        }
+    }
+    output
+}
+
+fn recurse_bifurcation(
+    rem_joltage: Vec<i64>,
+    switches_binary: &[i32],
+    switches_vec: &Vec<Vec<u32>>,
+    cache_total: &mut FxHashMap<Vec<i64>, Option<u64>>,
+    cache_even: &FxHashMap<i32, Vec<Vec<i32>>>,
+) -> Option<u64> {
+    if cache_total.contains_key(&rem_joltage) {
+        // println!("Cache hit");
+        return *cache_total.get(&rem_joltage).unwrap();
+    }
+    if rem_joltage.iter().all(|x| *x == 0) {
+        return Some(0);
+    }
+
+    let target = rem_joltage.iter().enumerate().fold(0, |acc, (idx, val)| {
+        acc + ((*val as i32 % 2) << (idx as u32))
+    });
+    let presses = match cache_even.get(&target) {
+        Some(p) => p,
+        None => {
+            return None;
+        }
+    };
+    let mut min_presses = None;
+    for p in presses {
+        let mut new_joltage = rem_joltage.clone();
+        let presses_idx: Vec<usize> = p
+            .iter()
+            .map(|x| switches_binary.iter().position(|y: &i32| *x == *y).unwrap())
+            .collect();
+
+        for subtract in presses_idx {
+            let to_subtract = switches_vec[subtract].clone();
+            for t in to_subtract {
+                new_joltage[t as usize] -= 1;
+            }
+        }
+        if new_joltage.iter().any(|x| *x < 0) {
+            continue;
+        }
+        for n in new_joltage.iter_mut() {
+            assert_eq!(*n % 2, 0);
+            *n /= 2;
+        }
+
+        let outcome = recurse_bifurcation(
+            new_joltage,
+            switches_binary,
+            switches_vec,
+            cache_total,
+            cache_even,
+        )
+        .map(|c| p.len() as u64 + 2 * c);
+        min_presses = min_presses.min(outcome).or(min_presses).or(outcome);
+        cache_total.insert(rem_joltage.clone(), min_presses);
+    }
+    min_presses
+}
+
+// #[aoc(day10, part2, faster)]
+#[allow(dead_code)]
 pub fn part_b_faster(contents: &str) -> i64 {
     let lines = parse(contents);
     let mut output = 0;
     for (idx, (_, toggles, joltage)) in lines.into_iter().enumerate() {
-        println!("Doing case {:?}", idx);
+        // if idx != 115 {
+        //     continue;
+        // }
+        // println!("Doing case {:?}", idx);
         let max_presses = *joltage.iter().max().unwrap();
         let mut switches = vec![];
         for t in toggles.iter() {
@@ -126,10 +227,10 @@ pub fn part_b_faster(contents: &str) -> i64 {
                 None => solutions[empty] = Some(0),
             };
         }
-        println!("{:?}, {:?}, {:?}", solutions, row_reduced, t_matrix);
+        // println!("{:?}, {:?}, {:?}", solutions, row_reduced, t_matrix);
         let target = t_matrix.iter().map(|x| x[0]).collect();
         let intermed = recurse_b(row_reduced, target, solutions, max_presses).unwrap();
-        println!("{:?}", intermed);
+        // println!("{:?}", intermed);
         output += intermed;
     }
     output
@@ -228,6 +329,7 @@ fn bezout(numbers: &[i64], mut target: i64, max: i64) -> Vec<Vec<i64>> {
             output.push(n_p);
         }
     }
+    // println!("{:?}", output.len());
     output
 }
 
@@ -331,7 +433,7 @@ fn smith_normal_form(switches: Vec<Vec<i64>>, joltage: Vec<i64>) -> (Vec<Vec<i64
     for x in joltage.iter() {
         t_matrix.push(vec![*x]);
     }
-    println!("starting {:?}, {:?}", switches_transpose, joltage);
+    // println!("starting {:?}, {:?}", switches_transpose, joltage);
     while prev_pivot_col < switches_transpose[0].len() && prev_pivot_row < switches_transpose.len()
     {
         let mut min_col = switches_transpose[0].len();
@@ -394,6 +496,11 @@ fn recurse_b(
         .enumerate()
         .filter_map(|(idx, &v)| bezout_selection_idx.contains(&idx).then_some(v))
         .collect::<Vec<i64>>();
+
+    if bezout_coeff.is_empty() {
+        return None;
+    }
+    // println!("{:?}", bezout_coeff);
     let bezout_pairs = bezout(&bezout_coeff, remaining[last_remaining], max);
     if bezout_pairs.is_empty() || bezout_pairs[0].is_empty() {
         return None;
@@ -445,6 +552,14 @@ mod tests {
         let file_path = format!("input/2025/{}_small.txt", s);
         let contents = fs::read_to_string(file_path).expect("file not found");
         assert_eq!(part_b_faster(&contents), 33);
+    }
+
+    #[test]
+    fn test_2_bifurcation() {
+        let s = Path::new(file!()).file_stem().unwrap().to_str().unwrap();
+        let file_path = format!("input/2025/{}_small.txt", s);
+        let contents = fs::read_to_string(file_path).expect("file not found");
+        assert_eq!(part_b_bifurcation(&contents), 33);
     }
 
     #[test]
